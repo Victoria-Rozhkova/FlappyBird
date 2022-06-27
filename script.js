@@ -97,17 +97,9 @@ const bird = {
       this.w,
       this.h
     );
-    // context.drawImage(
-    //   sprite,
-    //   this.sX,
-    //   this.sY,
-    //   this.w,
-    //   this.h,
-    //   this.x + this.w,
-    //   this.y,
-    //   this.w,
-    //   this.h
-    // );
+  },
+  flap: function () {
+    //
   },
 };
 
@@ -119,17 +111,19 @@ const getReady = {
   x: canvas.width / 2 - 173 / 2,
   y: 80,
   draw: function () {
-    context.drawImage(
-      sprite,
-      this.sX,
-      this.sY,
-      this.w,
-      this.h,
-      this.x,
-      this.y,
-      this.w,
-      this.h
-    );
+    if (state.current === state.getReady) {
+      context.drawImage(
+        sprite,
+        this.sX,
+        this.sY,
+        this.w,
+        this.h,
+        this.x,
+        this.y,
+        this.w,
+        this.h
+      );
+    }
   },
 };
 
@@ -141,19 +135,44 @@ const gameOver = {
   x: canvas.width / 2 - 225 / 2,
   y: 90,
   draw: function () {
-    context.drawImage(
-      sprite,
-      this.sX,
-      this.sY,
-      this.w,
-      this.h,
-      this.x,
-      this.y,
-      this.w,
-      this.h
-    );
+    if (state.current === state.over) {
+      context.drawImage(
+        sprite,
+        this.sX,
+        this.sY,
+        this.w,
+        this.h,
+        this.x,
+        this.y,
+        this.w,
+        this.h
+      );
+    }
   },
 };
+
+const state = {
+  current: 0,
+  getReady: 0,
+  game: 1,
+  over: 2,
+};
+
+function onClick() {
+  switch (state.current) {
+    case state.getReady:
+      state.current = state.game;
+      break;
+    case state.game:
+      bird.flap();
+      break;
+    case state.over:
+      state.current = state.getReady;
+      break;
+  }
+}
+
+canvas.addEventListener("click", onClick);
 
 const startAudio = new Audio();
 const flyAudio = new Audio();
@@ -178,6 +197,9 @@ function draw() {
   context.fillRect(0, 0, canvas.width, canvas.height);
   bg.draw();
   fg.draw();
+  bird.draw();
+  getReady.draw();
+  gameOver.draw();
 }
 
 function update() {}
