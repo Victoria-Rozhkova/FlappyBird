@@ -95,6 +95,7 @@ const bird = {
   gravity: 0.25,
   jump: 4.6,
   rotation: 0,
+  period: 0,
   draw: function () {
     let bird = this.animation[this.frame];
     context.save();
@@ -131,6 +132,7 @@ const bird = {
         this.y = canvas.height - fg.h - this.h / 2;
         if (state.current === state.game) {
           state.current = state.over;
+          hitAudio.play();
         }
       }
       if (this.speed >= this.jump) {
@@ -198,13 +200,83 @@ const state = {
   over: 2,
 };
 
+const pipes = {
+  position: [],
+  bottom: {
+    sX: 502,
+    sY: 0,
+  },
+  top: {
+    sX: 553,
+    sY: 0,
+  },
+  w: 53,
+  h: 400,
+  gap: 85,
+  dx: 2,
+
+  maxYPos: -150,
+
+  draw: function () {
+    for (let i = 0; i < this.position.length; i++) {
+      let p = this.position[i];
+      let topYPos = p.y;
+      let bottomYPos = p.y + this.gap + this.h;
+      context.drawImage(
+        sprite,
+        this.top.sX,
+        this.top.sY,
+        this.w,
+        this.h,
+        p.x,
+        topYPos,
+        this.w,
+        this.h
+      );
+      context.drawImage(
+        sprite,
+        this.bottom.sX,
+        this.bottom.sY,
+        this.w,
+        this.h,
+        p.x,
+        bottomYPos,
+        this.w,
+        this.h
+      );
+    }
+  },
+  update: function () {
+    if (state.current !== state.game) return;
+    if (frames % 100 === 0) {
+      this.position.push({
+        x: canvas.width,
+        y: this.maxYPos * (Math.random() + 1),
+      });
+    }
+    for (let i = 0; i < this.position.length; i++) {
+      let p = this.position[i];
+      p.x -= this.dx;
+      if (p.x + this.w <= 0) {
+        this.position.shift();
+        score.value += 1;
+      }
+    }
+  },
+};
+
 function onClick() {
   switch (state.current) {
     case state.getReady:
       state.current = state.game;
+      startAudio.play();
       break;
     case state.game:
       bird.flap();
+      flyAudio.play();
+      flyAudio.pause();
+      flyAudio.currentTime = 0;
+      flyAudio.play();
       break;
     case state.over:
       state.current = state.getReady;
@@ -236,6 +308,7 @@ function draw() {
   context.fillStyle = "#70c5ce";
   context.fillRect(0, 0, canvas.width, canvas.height);
   bg.draw();
+  pipes.draw();
   fg.draw();
   bird.draw();
   getReady.draw();
@@ -245,6 +318,7 @@ function draw() {
 function update() {
   bird.update();
   fg.update();
+  pipes.update();
 }
 
 function loop() {
