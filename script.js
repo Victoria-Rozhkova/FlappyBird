@@ -79,6 +79,30 @@ const fg = {
   },
 };
 
+const score = {
+  best: parseInt(localStorage.getItem("best")) || 0,
+  current: 0,
+  draw: function () {
+    context.fillStyle = "#FFF";
+    context.strokeStyle = "#000";
+    if (state.current === state.game) {
+      context.lineWidth = 2;
+      context.font = "35px Teko";
+      context.fillText(this.current, canvas.width / 2, 50);
+      context.strokeText(this.current, canvas.width / 2, 50);
+    } else if (state.current === state.over) {
+      context.font = "25px Teko";
+      context.fillText(this.current, 225, 186);
+      context.strokeText(this.current, 225, 186);
+      context.fillText(this.best, 225, 228);
+      context.strokeText(this.best, 225, 228);
+    }
+  },
+  reset: function () {
+    this.current = 0;
+  },
+};
+
 const bird = {
   animation: [
     { sX: 276, sY: 112 },
@@ -93,6 +117,7 @@ const bird = {
   frame: 0,
   speed: 0,
   gravity: 0.25,
+  radius: 12,
   jump: 4.6,
   rotation: 0,
   period: 0,
@@ -132,7 +157,7 @@ const bird = {
         this.y = canvas.height - fg.h - this.h / 2;
         if (state.current === state.game) {
           state.current = state.over;
-          hitAudio.play();
+          dieAudio.play();
         }
       }
       if (this.speed >= this.jump) {
@@ -142,6 +167,9 @@ const bird = {
         this.rotation = -25 * DEGREE;
       }
     }
+  },
+  speedReset: function () {
+    this.speed = 0;
   },
 };
 
@@ -191,6 +219,13 @@ const gameOver = {
       );
     }
   },
+};
+
+const startBtn = {
+  x: 120,
+  y: 263,
+  w: 83,
+  h: 29,
 };
 
 const state = {
@@ -256,16 +291,44 @@ const pipes = {
     }
     for (let i = 0; i < this.position.length; i++) {
       let p = this.position[i];
+
+      let bottomPipeY = p.y + this.gap + this.h;
+      if (
+        bird.x + bird.radius > p.x &&
+        bird.x - bird.radius < p.x + this.w &&
+        bird.y + bird.radius > p.y &&
+        bird.y - bird.radius < p.y + this.h
+      ) {
+        hitAudio.play();
+        state.current = state.over;
+      }
+      if (
+        bird.x + bird.radius > p.x &&
+        bird.x - bird.radius < p.x + this.w &&
+        bird.y + bird.radius > bottomPipeY &&
+        bird.y + bird.radius < bottomPipeY + this.h
+      ) {
+        hitAudio.play();
+        state.current = state.over;
+      }
+
       p.x -= this.dx;
+
       if (p.x + this.w <= 0) {
         this.position.shift();
-        score.value += 1;
+        score.current += 1;
+        scoreAudio.play();
+        score.best = Math.max(score.current, score.best);
+        localStorage.setItem("best", score.best);
       }
     }
   },
+  reset: function () {
+    this.position = [];
+  },
 };
 
-function onClick() {
+function onClick(event) {
   switch (state.current) {
     case state.getReady:
       state.current = state.game;
@@ -279,7 +342,21 @@ function onClick() {
       flyAudio.play();
       break;
     case state.over:
-      state.current = state.getReady;
+      const rect = canvas.getBoundingClientRect();
+      let clickX = event.clientX - rect.left;
+      let clickY = event.clientY - rect.top;
+      if (
+        clickX >= startBtn.x &&
+        clickX <= startBtn.x + startBtn.w &&
+        clickY >= startBtn.y &&
+        clickY <= startBtn.y + startBtn.h
+      ) {
+        bird.speedReset();
+        pipes.reset();
+        score.reset();
+        state.current = state.getReady;
+      }
+
       break;
   }
 }
@@ -298,12 +375,6 @@ scoreAudio.src = "./audio/score.wav";
 dieAudio.src = "./audio/die.wav";
 hitAudio.src = "./audio/hit.wav";
 
-let score = 0;
-
-const gap = 90;
-
-let grav = 1.5;
-
 function draw() {
   context.fillStyle = "#70c5ce";
   context.fillRect(0, 0, canvas.width, canvas.height);
@@ -313,6 +384,7 @@ function draw() {
   bird.draw();
   getReady.draw();
   gameOver.draw();
+  score.draw();
 }
 
 function update() {
