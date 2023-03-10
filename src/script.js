@@ -2,6 +2,7 @@ const canvas = document.getElementById("canvas");
 const context = canvas.getContext("2d");
 
 let frames = 0;
+let prevTimestamp = 0;
 const DEGREE = Math.PI / 180;
 
 const sprite = new Image();
@@ -387,14 +388,16 @@ function draw() {
   score.draw();
 }
 
-function update() {
+function update(diff) {
   bird.update();
   fg.update();
   pipes.update();
 }
 
-function loop() {
-  update();
+function loop(timestamp) {
+  const diff = timestamp - prevTimestamp;
+  prevTimestamp = timestamp;
+  update(diff);
   draw();
   frames++;
   requestAnimationFrame(loop);

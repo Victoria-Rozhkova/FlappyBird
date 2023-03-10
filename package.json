@@ -1,0 +1,20 @@
+{
+  "name": "flappybird",
+  "version": "1.0.0",
+  "main": "script.js",
+  "homepage": "https://Victoria-Rozhkova.github.io/FlappyBird",
+  "scripts": {
+    "deploy": "gh-pages -d src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Victoria-Rozhkova/FlappyBird.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Victoria-Rozhkova/FlappyBird/issues"
+  },
+  "devDependencies": {
+    "gh-pages": "^5.0.0"
+  }
+}
