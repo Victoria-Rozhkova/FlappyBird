@@ -343,8 +343,8 @@ const pipes = {
         bird.y + bird.radius > p.y &&
         bird.y - bird.radius < p.y + this.h
       ) {
-        // hitAudio.play();
-        // state.current = state.over;
+        hitAudio.play();
+        state.current = state.over;
       }
 
       if (
@@ -353,8 +353,8 @@ const pipes = {
         bird.y + bird.radius > bottomPipeY &&
         bird.y + bird.radius < bottomPipeY + this.h
       ) {
-        // hitAudio.play();
-        // state.current = state.over;
+        hitAudio.play();
+        state.current = state.over;
       }
 
       p.x -= this.dx * delta;
