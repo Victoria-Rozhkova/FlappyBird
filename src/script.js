@@ -15,6 +15,7 @@ const bg = {
   h: 226,
   x: 0,
   y: canvas.height - 226,
+
   draw: function () {
     context.drawImage(
       sprite,
@@ -27,6 +28,7 @@ const bg = {
       this.w,
       this.h
     );
+
     context.drawImage(
       sprite,
       this.sX,
@@ -49,6 +51,7 @@ const fg = {
   x: 0,
   y: canvas.height - 112,
   dx: 2,
+
   draw: function () {
     context.drawImage(
       sprite,
@@ -61,6 +64,7 @@ const fg = {
       this.w,
       this.h
     );
+
     context.drawImage(
       sprite,
       this.sX,
@@ -73,9 +77,10 @@ const fg = {
       this.h
     );
   },
-  update: function () {
+
+  update: function (delta) {
     if (state.current === state.game) {
-      this.x = (this.x - this.dx) % (this.w / 2);
+      this.x = (this.x - this.dx * delta) % (this.w / 2);
     }
   },
 };
@@ -83,6 +88,7 @@ const fg = {
 const score = {
   best: parseInt(localStorage.getItem("best")) || 0,
   current: 0,
+
   draw: function () {
     context.fillStyle = "#FFF";
     context.strokeStyle = "#000";
@@ -99,6 +105,7 @@ const score = {
       context.strokeText(this.best, 225, 228);
     }
   },
+
   reset: function () {
     this.current = 0;
   },
@@ -122,6 +129,8 @@ const bird = {
   jump: 4.6,
   rotation: 0,
   period: 0,
+  animationTimer: 0,
+
   draw: function () {
     let bird = this.animation[this.frame];
     context.save();
@@ -140,27 +149,47 @@ const bird = {
     );
     context.restore();
   },
+
   flap: function () {
     this.speed = -this.jump;
   },
-  update: function () {
-    this.period = state.current === state.getReady ? 10 : 5;
-    this.frame += frames % this.period === 0 ? 1 : 0;
-    this.frame = this.frame % this.animation.length;
+
+  update: function(diff) {
+    const delta = diff / (1000 / 60);
 
     if (state.current === state.getReady) {
+
+      if (!this.getReadyTimer) this.getReadyTimer = 0;
+      this.getReadyTimer += diff;
+
+      if (this.getReadyTimer > 200) {
+        this.frame = (this.frame + 1) % this.animation.length;
+        this.getReadyTimer = 0;
+      }
+
       this.y = 150;
-      this.rotation = 0 * DEGREE;
+      this.speed = 0;
+      this.rotation = 0;
     } else {
-      this.speed += this.gravity;
-      this.y += this.speed;
+      this.animationTimer += diff;
+
+      if (this.animationTimer > 100) {
+        this.frame = (this.frame + 1) % this.animation.length;
+        this.animationTimer = 0;
+      }
+
+      this.speed += this.gravity * delta;
+      this.y += this.speed * delta;
+
       if (this.y + this.h / 2 >= canvas.height - fg.h) {
         this.y = canvas.height - fg.h - this.h / 2;
+
         if (state.current === state.game) {
           state.current = state.over;
           dieAudio.play();
         }
       }
+
       if (this.speed >= this.jump) {
         this.rotation = 90 * DEGREE;
         this.frame = 1;
@@ -169,6 +198,7 @@ const bird = {
       }
     }
   },
+
   speedReset: function () {
     this.speed = 0;
   },
@@ -181,6 +211,7 @@ const getReady = {
   h: 152,
   x: canvas.width / 2 - 173 / 2,
   y: 80,
+
   draw: function () {
     if (state.current === state.getReady) {
       context.drawImage(
@@ -205,6 +236,7 @@ const gameOver = {
   h: 202,
   x: canvas.width / 2 - 225 / 2,
   y: 90,
+
   draw: function () {
     if (state.current === state.over) {
       context.drawImage(
@@ -252,12 +284,15 @@ const pipes = {
   dx: 2,
 
   maxYPos: -150,
+  spawnTimer: 0,
+  spawnInterval: 1500,
 
   draw: function () {
     for (let i = 0; i < this.position.length; i++) {
       let p = this.position[i];
       let topYPos = p.y;
       let bottomYPos = p.y + this.gap + this.h;
+
       context.drawImage(
         sprite,
         this.top.sX,
@@ -269,6 +304,7 @@ const pipes = {
         this.w,
         this.h
       );
+
       context.drawImage(
         sprite,
         this.bottom.sX,
@@ -282,38 +318,46 @@ const pipes = {
       );
     }
   },
-  update: function () {
+
+  update: function (delta) {
     if (state.current !== state.game) return;
-    if (frames % 100 === 0) {
+
+    this.spawnTimer += delta * (1000 / 60);
+
+    if (this.spawnTimer >= this.spawnInterval) {
       this.position.push({
         x: canvas.width,
         y: this.maxYPos * (Math.random() + 1),
       });
+      this.spawnTimer = 0;
     }
+
     for (let i = 0; i < this.position.length; i++) {
       let p = this.position[i];
 
       let bottomPipeY = p.y + this.gap + this.h;
+
       if (
         bird.x + bird.radius > p.x &&
         bird.x - bird.radius < p.x + this.w &&
         bird.y + bird.radius > p.y &&
         bird.y - bird.radius < p.y + this.h
       ) {
-        hitAudio.play();
-        state.current = state.over;
+        // hitAudio.play();
+        // state.current = state.over;
       }
+
       if (
         bird.x + bird.radius > p.x &&
         bird.x - bird.radius < p.x + this.w &&
         bird.y + bird.radius > bottomPipeY &&
         bird.y + bird.radius < bottomPipeY + this.h
       ) {
-        hitAudio.play();
-        state.current = state.over;
+        // hitAudio.play();
+        // state.current = state.over;
       }
 
-      p.x -= this.dx;
+      p.x -= this.dx * delta;
 
       if (p.x + this.w <= 0) {
         this.position.shift();
@@ -324,8 +368,10 @@ const pipes = {
       }
     }
   },
+
   reset: function () {
     this.position = [];
+    this.spawnTimer = 0;
   },
 };
 
@@ -335,6 +381,7 @@ function onClick(event) {
       state.current = state.game;
       startAudio.play();
       break;
+
     case state.game:
       bird.flap();
       flyAudio.play();
@@ -342,6 +389,7 @@ function onClick(event) {
       flyAudio.currentTime = 0;
       flyAudio.play();
       break;
+
     case state.over:
       const rect = canvas.getBoundingClientRect();
       let clickX = event.clientX - rect.left;
@@ -389,9 +437,10 @@ function draw() {
 }
 
 function update(diff) {
-  bird.update();
-  fg.update();
-  pipes.update();
+  bird.update(diff);
+  const delta = diff / (1000 / 60);
+  fg.update(delta);
+  pipes.update(delta);
 }
 
 function loop(timestamp) {
@@ -402,4 +451,5 @@ function loop(timestamp) {
   frames++;
   requestAnimationFrame(loop);
 }
+
 loop();
